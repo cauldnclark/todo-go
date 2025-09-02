@@ -14,16 +14,18 @@ type Config struct {
 	Google   GoogleConfig
 }
 type DatabaseConfig struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	Name     string
+	Host        string
+	Port        string
+	User        string
+	Password    string
+	Name        string
+	DatabaseURL string
 }
 type ServerConfig struct {
-	Port   string
-	Env    string
-	IsProd bool
+	Port      string
+	Env       string
+	IsProd    bool
+	JWTSecret string
 }
 type RedisConfig struct {
 	Host     string
@@ -37,24 +39,24 @@ type GoogleConfig struct {
 }
 
 func Load() (*Config, error) {
-	if os.Getenv("ENV") == "development" {
-		if err := godotenv.Load(); err != nil {
-			fmt.Println("Error loading .env file")
-		}
+	if err := godotenv.Load(); err != nil {
+		fmt.Println("Error loading .env file")
 	}
 
 	config := &Config{
 		Database: DatabaseConfig{
-			Host:     os.Getenv("DB_HOST"),
-			Port:     os.Getenv("DB_PORT"),
-			User:     os.Getenv("DB_USER"),
-			Password: os.Getenv("DB_PASSWORD"),
-			Name:     os.Getenv("DB_NAME"),
+			Host:        os.Getenv("DB_HOST"),
+			Port:        os.Getenv("DB_PORT"),
+			User:        os.Getenv("DB_USER"),
+			Password:    os.Getenv("DB_PASSWORD"),
+			Name:        os.Getenv("DB_NAME"),
+			DatabaseURL: os.Getenv("DATABASE_URL"),
 		},
 		Server: ServerConfig{
-			Port:   os.Getenv("PORT"),
-			Env:    os.Getenv("ENV"),
-			IsProd: os.Getenv("ENV") == "production",
+			Port:      os.Getenv("PORT"),
+			Env:       os.Getenv("ENV"),
+			IsProd:    os.Getenv("ENV") == "production",
+			JWTSecret: os.Getenv("JWT_SECRET"),
 		},
 		Redis: RedisConfig{
 			Host:     os.Getenv("REDIS_HOST"),
