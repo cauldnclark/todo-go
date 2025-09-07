@@ -34,7 +34,7 @@ func (h *AuthHandler) GoogleSignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authResp, err := h.userService.AuthenticateWithGoogle(r.Context(), req.Token)
+	authResp, err := h.userService.AuthenticateWithGoogle(r.Context(), req.Code)
 	if err != nil {
 		http.Error(w, "Authentication failed"+err.Error(), http.StatusUnauthorized)
 		return

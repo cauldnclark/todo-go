@@ -35,7 +35,7 @@ func main() {
 	userRepo := repository.NewUserRepository(dbpool)
 	todoRepo := repository.NewTodoRepository(dbpool)
 
-	userService := service.NewUserService(userRepo, cfg.Server.JWTSecret, cfg.Google.ClientID)
+	userService := service.NewUserService(userRepo, cfg.Server.JWTSecret, cfg.Google.ClientID, cfg.Google.ClientSecret, cfg.Google.RedirectURL)
 	todoService := service.NewTodoService(todoRepo)
 
 	authHandler := handlers.NewAuthHandler(userService)

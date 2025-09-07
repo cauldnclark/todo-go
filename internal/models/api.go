@@ -44,6 +44,14 @@ type UpdateTodoRequest struct {
 	Completed   *bool  `json:"completed"`
 }
 
+type GoogleTokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	Scope        string `json:"scope"`
+}
+
 type GoogleTokenInfo struct {
 	ID         string `json:"id"`
 	Email      string `json:"email"`
@@ -52,7 +60,8 @@ type GoogleTokenInfo struct {
 }
 
 type AuthRequest struct {
-	Token string `json:"token"`
+	Code  string `json:"code" validate:"required"`
+	State string `json:"state,omitempty"`
 }
 
 type AuthResponse struct {
