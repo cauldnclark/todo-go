@@ -1,9 +1,18 @@
-import React, { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, Calendar, CheckCircle2, Circle } from "lucide-react";
+import {
+  Trash2,
+  Plus,
+  Calendar,
+  CheckCircle2,
+  Circle,
+  Search,
+  Loader2,
+} from "lucide-react";
+import { todoApi } from "@/services/todoApi";
+import type { Todo, ApiError } from "@/types/api";
 
 export default function TodoListPage() {
   const todoAuthToken = localStorage.getItem("todo-auth-token");
@@ -14,88 +23,119 @@ export default function TodoListPage() {
     }
   }, [todoAuthToken]);
 
-  const [todos, setTodos] = React.useState([
-    {
-      id: 1,
-      text: "Complete project proposal",
-      completed: false,
-      priority: "high",
-      dueDate: "2025-09-08",
-    },
-    {
-      id: 2,
-      text: "Review team feedback",
-      completed: true,
-      priority: "medium",
-      dueDate: "2025-09-07",
-    },
-    {
-      id: 3,
-      text: "Schedule client meeting",
-      completed: false,
-      priority: "low",
-      dueDate: "2025-09-10",
-    },
-    {
-      id: 4,
-      text: "Update documentation",
-      completed: false,
-      priority: "medium",
-      dueDate: "2025-09-09",
-    },
-  ]);
-  const [newTodo, setNewTodo] = React.useState("");
-  const [filter, setFilter] = React.useState("all");
-
-  const addTodo = () => {
-    if (newTodo.trim()) {
-      setTodos([
-        ...todos,
-        {
-          id: Date.now(),
-          text: newTodo,
-          completed: false,
-          priority: "medium",
-          dueDate: new Date().toISOString().split("T")[0],
-        },
-      ]);
-      setNewTodo("");
-    }
-  };
-
-  const toggleTodo = (id: number) => {
-    setTodos(
-      todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      )
-    );
-  };
-
-  const deleteTodo = (id: number) => {
-    setTodos(todos.filter((todo) => todo.id !== id));
-  };
-
-  const filteredTodos = todos.filter((todo) => {
-    if (filter === "completed") return todo.completed;
-    if (filter === "pending") return !todo.completed;
-    return true;
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [newTodo, setNewTodo] = useState("");
+  const [newTodoDescription, setNewTodoDescription] = useState("");
+  const [filter, setFilter] = useState<"all" | "completed" | "pending">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 50,
   });
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-100 text-red-800 border-red-200";
-      case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "low":
-        return "bg-green-100 text-green-800 border-green-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+  const fetchTodos = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const completedFilter =
+        filter === "all" ? undefined : filter === "completed";
+      const response = await todoApi.getTodos({
+        completed: completedFilter,
+        page: pagination.page,
+        limit: pagination.limit,
+      });
+      setTodos(response.todos || []);
+      setPagination(response.meta);
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.message || "Failed to fetch todos");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const completedCount = todos.filter((todo) => todo.completed).length;
-  const totalCount = todos.length;
+  const addTodo = async () => {
+    if (!newTodo.trim()) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+      await todoApi.createTodo({
+        title: newTodo.trim(),
+        description: newTodoDescription.trim() || "",
+        completed: false,
+      });
+      setNewTodo("");
+      setNewTodoDescription("");
+      await fetchTodos();
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.message || "Failed to create todo");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleTodo = async (id: number) => {
+    const todo = (todos || []).find((t) => t.id === id);
+    if (!todo) return;
+
+    try {
+      setError(null);
+      await todoApi.toggleTodoCompletion(id, !todo.completed);
+      await fetchTodos();
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.message || "Failed to update todo");
+    }
+  };
+
+  const deleteTodo = async (id: number) => {
+    try {
+      setError(null);
+      await todoApi.deleteTodo(id);
+      await fetchTodos();
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.message || "Failed to delete todo");
+    }
+  };
+
+  // Load todos on component mount and when filter changes
+  useEffect(() => {
+    if (todoAuthToken) {
+      fetchTodos();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todoAuthToken, filter]);
+
+  const filteredTodos = (todos || []).filter((todo) => {
+    // Filter by completion status
+    let matchesFilter = true;
+    if (filter === "completed") matchesFilter = todo.completed;
+    if (filter === "pending") matchesFilter = !todo.completed;
+
+    // Filter by search query
+    let matchesSearch = true;
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      matchesSearch =
+        todo.title.toLowerCase().includes(query) ||
+        todo.description.toLowerCase().includes(query);
+    }
+
+    return matchesFilter && matchesSearch;
+  });
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const completedCount = (todos || []).filter((todo) => todo.completed).length;
+  const totalCount = (todos || []).length;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -107,26 +147,61 @@ export default function TodoListPage() {
           </p>
         </div>
 
+        {error && (
+          <Card className="mb-6 border-red-200 bg-red-50">
+            <CardContent className="p-4">
+              <p className="text-red-800 text-sm">{error}</p>
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-lg">Add New Task</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-2">
+            <div className="space-y-3">
               <Input
-                placeholder="What needs to be done?"
+                placeholder="Task title"
                 value={newTodo}
                 onChange={(e) => setNewTodo(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && addTodo()}
-                className="flex-1"
+                onKeyPress={(e) =>
+                  e.key === "Enter" && !e.shiftKey && addTodo()
+                }
+                disabled={loading}
+              />
+              <Input
+                placeholder="Description (optional)"
+                value={newTodoDescription}
+                onChange={(e) => setNewTodoDescription(e.target.value)}
+                disabled={loading}
               />
               <Button
                 onClick={addTodo}
-                className="bg-blue-600 hover:bg-blue-700"
+                disabled={loading || !newTodo.trim()}
+                className="bg-blue-600 hover:bg-blue-700 w-full"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                {loading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4 mr-2" />
+                )}
                 Add Task
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search todos..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
             </div>
           </CardContent>
         </Card>
@@ -136,8 +211,9 @@ export default function TodoListPage() {
             variant={filter === "all" ? "default" : "outline"}
             onClick={() => setFilter("all")}
             className={filter === "all" ? "bg-blue-600 hover:bg-blue-700" : ""}
+            disabled={loading}
           >
-            All ({totalCount})
+            All ({pagination.total})
           </Button>
           <Button
             variant={filter === "pending" ? "default" : "outline"}
@@ -145,8 +221,9 @@ export default function TodoListPage() {
             className={
               filter === "pending" ? "bg-blue-600 hover:bg-blue-700" : ""
             }
+            disabled={loading}
           >
-            Pending ({totalCount - completedCount})
+            Pending ({pagination.total - completedCount})
           </Button>
           <Button
             variant={filter === "completed" ? "default" : "outline"}
@@ -154,19 +231,31 @@ export default function TodoListPage() {
             className={
               filter === "completed" ? "bg-blue-600 hover:bg-blue-700" : ""
             }
+            disabled={loading}
           >
             Completed ({completedCount})
           </Button>
         </div>
 
         <div className="space-y-3">
-          {filteredTodos.length === 0 ? (
+          {loading && todos.length === 0 ? (
+            <Card>
+              <CardContent className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <Loader2 className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
+                  <p className="text-gray-500">Loading todos...</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : filteredTodos.length === 0 ? (
             <Card>
               <CardContent className="flex items-center justify-center py-8">
                 <div className="text-center">
                   <CheckCircle2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500">
-                    {filter === "completed"
+                    {searchQuery.trim()
+                      ? "No todos match your search"
+                      : filter === "completed"
                       ? "No completed tasks yet"
                       : filter === "pending"
                       ? "All tasks completed! Great job!"
@@ -184,12 +273,13 @@ export default function TodoListPage() {
                 }`}
               >
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-start gap-3">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleTodo(todo.id)}
-                      className="p-1 h-6 w-6"
+                      className="p-1 h-6 w-6 mt-1"
+                      disabled={loading}
                     >
                       {todo.completed ? (
                         <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -199,27 +289,36 @@ export default function TodoListPage() {
                     </Button>
 
                     <div className="flex-1">
-                      <p
-                        className={`${
+                      <h3
+                        className={`font-medium ${
                           todo.completed
                             ? "line-through text-gray-500"
                             : "text-gray-900"
                         }`}
                       >
-                        {todo.text}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge
-                          className={`text-xs ${getPriorityColor(
-                            todo.priority
-                          )}`}
+                        {todo.title}
+                      </h3>
+                      {todo.description && (
+                        <p
+                          className={`text-sm mt-1 ${
+                            todo.completed
+                              ? "line-through text-gray-400"
+                              : "text-gray-600"
+                          }`}
                         >
-                          {todo.priority}
-                        </Badge>
+                          {todo.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2">
                         <div className="flex items-center gap-1 text-xs text-gray-500">
                           <Calendar className="h-3 w-3" />
-                          {todo.dueDate}
+                          Created: {formatDate(todo.created_at)}
                         </div>
+                        {todo.updated_at !== todo.created_at && (
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            Updated: {formatDate(todo.updated_at)}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -228,6 +327,7 @@ export default function TodoListPage() {
                       size="sm"
                       onClick={() => deleteTodo(todo.id)}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      disabled={loading}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -238,20 +338,23 @@ export default function TodoListPage() {
           )}
         </div>
 
-        {totalCount > 0 && (
+        {pagination.total > 0 && (
           <div className="mt-8 bg-white rounded-lg p-4 border">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600">
-                Progress: {completedCount}/{totalCount} tasks
+                Progress: {completedCount}/{pagination.total} tasks
               </div>
               <div className="text-sm font-medium text-blue-600">
-                {Math.round((completedCount / totalCount) * 100)}% Complete
+                {Math.round((completedCount / pagination.total) * 100)}%
+                Complete
               </div>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
               <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(completedCount / totalCount) * 100}%` }}
+                style={{
+                  width: `${(completedCount / pagination.total) * 100}%`,
+                }}
               ></div>
             </div>
           </div>

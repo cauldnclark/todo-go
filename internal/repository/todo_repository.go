@@ -20,8 +20,8 @@ func NewTodoRepository(db *pgxpool.Pool) *TodoRepository {
 
 func (r *TodoRepository) CreateTodo(ctx context.Context, todo *models.Todo) error {
 	query := `
-		INSERT INTO todos (user_id, title, description, due_date, completed, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+		INSERT INTO todos (user_id, title, description, completed, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 

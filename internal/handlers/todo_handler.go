@@ -81,7 +81,7 @@ func (h *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 
 	todo, err := h.todoService.CreateTodo(r.Context(), userID, &req)
 	if err != nil {
-		http.Error(w, "Failed to create todo", http.StatusInternalServerError)
+		http.Error(w, "Failed to create todo "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -107,7 +107,7 @@ func (h *TodoHandler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req models.UpdateTodoRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if errDecode := json.NewDecoder(r.Body).Decode(&req); errDecode != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
