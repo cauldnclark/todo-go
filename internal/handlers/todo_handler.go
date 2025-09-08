@@ -112,7 +112,7 @@ func (h *TodoHandler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	todo, err := h.todoService.UpdateTodo(r.Context(), userID, todoID, &req)
+	todo, err := h.todoService.UpdateTodo(r.Context(), todoID, userID, &req)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Todo not found", http.StatusNotFound)
