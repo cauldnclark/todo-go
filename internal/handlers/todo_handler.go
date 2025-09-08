@@ -142,7 +142,7 @@ func (h *TodoHandler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.todoService.DeleteTodo(r.Context(), userID, todoID); err != nil {
+	if err := h.todoService.DeleteTodo(r.Context(), todoID, userID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Todo not found", http.StatusNotFound)
 			return
