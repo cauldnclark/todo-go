@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Trash2,
   Plus,
@@ -10,6 +10,9 @@ import {
   Circle,
   Search,
   Loader2,
+  Filter,
+  BarChart3,
+  LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
 import { todoApi } from "@/services/todoApi";
@@ -168,128 +171,193 @@ export default function TodoListPage() {
   const totalCount = (todos || []).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Tasks</h1>
-          <p className="text-gray-600">
-            {completedCount} of {totalCount} tasks completed
-          </p>
-        </div>
-
-        {error && (
-          <Card className="mb-6 border-red-200 bg-red-50">
-            <CardContent className="p-4">
-              <p className="text-red-800 text-sm">{error}</p>
-            </CardContent>
-          </Card>
-        )}
-
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Add New Task</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Input
-                placeholder="Task title"
-                value={newTodo}
-                onChange={(e) => setNewTodo(e.target.value)}
-                onKeyPress={(e) =>
-                  e.key === "Enter" && !e.shiftKey && addTodo()
-                }
-                disabled={loading}
-              />
-              <Input
-                placeholder="Description (optional)"
-                value={newTodoDescription}
-                onChange={(e) => setNewTodoDescription(e.target.value)}
-                disabled={loading}
-              />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <div className="max-w-5xl mx-auto px-6 py-12 lg:px-8">
+        {/* Header Section */}
+        <div className="mb-16">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-4xl font-light text-slate-900 mb-3 tracking-tight">
+                Tasks
+              </h1>
+              <p className="text-slate-500 font-light">
+                {completedCount} of {totalCount} completed
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 text-slate-600">
+                <BarChart3 className="h-5 w-5" />
+                <span className="text-sm font-medium">
+                  {totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0}%
+                </span>
+              </div>
               <Button
-                onClick={addTodo}
-                disabled={loading || !newTodo.trim()}
-                className="bg-blue-600 hover:bg-blue-700 w-full"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  localStorage.removeItem("todo-auth-token");
+                  window.location.href = "/login";
+                }}
+                className="p-2 h-auto w-auto text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-all duration-200"
               >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4 mr-2" />
-                )}
-                Add Task
+                <LogOut className="h-5 w-5" />
               </Button>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search todos..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+          </div>
+          
+          {/* Progress Bar */}
+          {totalCount > 0 && (
+            <div className="w-full bg-slate-100 rounded-full h-1.5 mb-8">
+              <div
+                className="bg-gradient-to-r from-slate-600 to-slate-700 h-1.5 rounded-full transition-all duration-700 ease-out"
+                style={{
+                  width: `${(completedCount / totalCount) * 100}%`,
+                }}
               />
             </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex gap-2 mb-6">
-          <Button
-            variant={filter === "all" ? "default" : "outline"}
-            onClick={() => setFilter("all")}
-            className={filter === "all" ? "bg-blue-600 hover:bg-blue-700" : ""}
-            disabled={loading}
-          >
-            All ({pagination.total})
-          </Button>
-          <Button
-            variant={filter === "pending" ? "default" : "outline"}
-            onClick={() => setFilter("pending")}
-            className={
-              filter === "pending" ? "bg-blue-600 hover:bg-blue-700" : ""
-            }
-            disabled={loading}
-          >
-            Pending ({pagination.total - completedCount})
-          </Button>
-          <Button
-            variant={filter === "completed" ? "default" : "outline"}
-            onClick={() => setFilter("completed")}
-            className={
-              filter === "completed" ? "bg-blue-600 hover:bg-blue-700" : ""
-            }
-            disabled={loading}
-          >
-            Completed ({completedCount})
-          </Button>
+          )}
         </div>
 
+        {/* Error Display */}
+        {error && (
+          <div className="mb-8 p-4 bg-red-50 border border-red-100 rounded-xl">
+            <p className="text-red-700 text-sm font-medium">{error}</p>
+          </div>
+        )}
+
+        {/* Add Task Section */}
+        <div className="mb-12">
+          <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
+            <CardContent className="p-8">
+              <div className="space-y-6">
+                <div className="flex items-center space-x-3 mb-6">
+                  <Plus className="h-5 w-5 text-slate-600" />
+                  <h2 className="text-lg font-medium text-slate-900">New Task</h2>
+                </div>
+                <div className="space-y-4">
+                  <Input
+                    placeholder="What needs to be done?"
+                    value={newTodo}
+                    onChange={(e) => setNewTodo(e.target.value)}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && !e.shiftKey && addTodo()
+                    }
+                    disabled={loading}
+                    className="border-slate-200 focus:border-slate-400 focus:ring-slate-400 text-base py-3 px-4 rounded-lg bg-white/50"
+                  />
+                  <Input
+                    placeholder="Add details (optional)"
+                    value={newTodoDescription}
+                    onChange={(e) => setNewTodoDescription(e.target.value)}
+                    disabled={loading}
+                    className="border-slate-200 focus:border-slate-400 focus:ring-slate-400 text-sm py-3 px-4 rounded-lg bg-white/50"
+                  />
+                  <Button
+                    onClick={addTodo}
+                    disabled={loading || !newTodo.trim()}
+                    className="bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4 mr-2" />
+                    )}
+                    Add Task
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Search and Filter Section */}
+        <div className="mb-8 space-y-6">
+          {/* Search */}
+          <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+                <Input
+                  placeholder="Search tasks..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-12 border-slate-200 focus:border-slate-400 focus:ring-slate-400 py-3 rounded-lg bg-white/50"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Filter Buttons */}
+          <div className="flex items-center space-x-2">
+            <Filter className="h-4 w-4 text-slate-500 mr-2" />
+            <div className="flex space-x-1">
+              <Button
+                variant={filter === "all" ? "default" : "ghost"}
+                onClick={() => setFilter("all")}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  filter === "all"
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                }`}
+                disabled={loading}
+              >
+                All
+                <span className="ml-2 text-xs opacity-75">({pagination.total})</span>
+              </Button>
+              <Button
+                variant={filter === "pending" ? "default" : "ghost"}
+                onClick={() => setFilter("pending")}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  filter === "pending"
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                }`}
+                disabled={loading}
+              >
+                Active
+                <span className="ml-2 text-xs opacity-75">({pagination.total - completedCount})</span>
+              </Button>
+              <Button
+                variant={filter === "completed" ? "default" : "ghost"}
+                onClick={() => setFilter("completed")}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  filter === "completed"
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                }`}
+                disabled={loading}
+              >
+                Done
+                <span className="ml-2 text-xs opacity-75">({completedCount})</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tasks List */}
         <div className="space-y-3">
           {loading && todos.length === 0 ? (
-            <Card>
-              <CardContent className="flex items-center justify-center py-8">
+            <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
+              <CardContent className="flex items-center justify-center py-16">
                 <div className="text-center">
-                  <Loader2 className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
-                  <p className="text-gray-500">Loading todos...</p>
+                  <Loader2 className="h-8 w-8 text-slate-400 mx-auto mb-4 animate-spin" />
+                  <p className="text-slate-500 font-light">Loading tasks...</p>
                 </div>
               </CardContent>
             </Card>
           ) : filteredTodos.length === 0 ? (
-            <Card>
-              <CardContent className="flex items-center justify-center py-8">
+            <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-sm">
+              <CardContent className="flex items-center justify-center py-16">
                 <div className="text-center">
-                  <CheckCircle2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">
+                  <CheckCircle2 className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-500 font-light">
                     {searchQuery.trim()
-                      ? "No todos match your search"
+                      ? "No tasks match your search"
                       : filter === "completed"
                       ? "No completed tasks yet"
                       : filter === "pending"
-                      ? "All tasks completed! Great job!"
-                      : "No tasks yet. Add one above!"}
+                      ? "All tasks completed"
+                      : "No tasks yet"}
                   </p>
                 </div>
               </CardContent>
@@ -298,55 +366,58 @@ export default function TodoListPage() {
             filteredTodos.map((todo) => (
               <Card
                 key={todo.id}
-                className={`transition-all hover:shadow-md ${
-                  todo.completed ? "bg-gray-50" : "bg-white"
+                className={`group border-0 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${
+                  todo.completed 
+                    ? "bg-white/40 backdrop-blur-sm" 
+                    : "bg-white/70 backdrop-blur-sm hover:bg-white/90"
                 }`}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
+                <CardContent className="p-6">
+                  <div className="flex items-start space-x-4">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleTodo(todo.id)}
-                      className="p-1 h-6 w-6 mt-1"
+                      className="p-2 h-auto w-auto mt-0.5 hover:bg-transparent group-hover:scale-110 transition-transform duration-200"
                       disabled={loading}
                     >
                       {todo.completed ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <CheckCircle2 className="h-5 w-5 text-slate-600" />
                       ) : (
-                        <Circle className="h-5 w-5 text-gray-400" />
+                        <Circle className="h-5 w-5 text-slate-300 hover:text-slate-500 transition-colors" />
                       )}
                     </Button>
 
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <h3
-                        className={`font-medium ${
+                        className={`font-medium text-base leading-relaxed transition-all duration-200 ${
                           todo.completed
-                            ? "line-through text-gray-500"
-                            : "text-gray-900"
+                            ? "line-through text-slate-400"
+                            : "text-slate-900 group-hover:text-slate-700"
                         }`}
                       >
                         {todo.title}
                       </h3>
                       {todo.description && (
                         <p
-                          className={`text-sm mt-1 ${
+                          className={`text-sm mt-2 leading-relaxed ${
                             todo.completed
-                              ? "line-through text-gray-400"
-                              : "text-gray-600"
+                              ? "line-through text-slate-300"
+                              : "text-slate-600"
                           }`}
                         >
                           {todo.description}
                         </p>
                       )}
-                      <div className="flex items-center gap-2 mt-2">
-                        <div className="flex items-center gap-1 text-xs text-gray-500">
-                          <Calendar className="h-3 w-3" />
-                          Created: {formatDate(todo.created_at)}
+                      <div className="flex items-center space-x-4 mt-4">
+                        <div className="flex items-center space-x-1.5 text-xs text-slate-400">
+                          <Calendar className="h-3.5 w-3.5" />
+                          <span className="font-light">{formatDate(todo.created_at)}</span>
                         </div>
                         {todo.updated_at !== todo.created_at && (
-                          <div className="flex items-center gap-1 text-xs text-gray-500">
-                            Updated: {formatDate(todo.updated_at)}
+                          <div className="flex items-center space-x-1.5 text-xs text-slate-400">
+                            <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                            <span className="font-light">Updated {formatDate(todo.updated_at)}</span>
                           </div>
                         )}
                       </div>
@@ -356,7 +427,7 @@ export default function TodoListPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => deleteTodo(todo.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="p-2 h-auto w-auto text-slate-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all duration-200"
                       disabled={loading}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -367,28 +438,6 @@ export default function TodoListPage() {
             ))
           )}
         </div>
-
-        {pagination.total > 0 && (
-          <div className="mt-8 bg-white rounded-lg p-4 border">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                Progress: {completedCount}/{pagination.total} tasks
-              </div>
-              <div className="text-sm font-medium text-blue-600">
-                {Math.round((completedCount / pagination.total) * 100)}%
-                Complete
-              </div>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{
-                  width: `${(completedCount / pagination.total) * 100}%`,
-                }}
-              ></div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
