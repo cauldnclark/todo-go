@@ -31,7 +31,7 @@ const useWebsocket = (
       console.log("WebSocket connected");
       onOpen(event);
       setReadyState(WebSocket.OPEN);
-      
+
       // Send initial heartbeat message
       ws.send(JSON.stringify({ event: "heartbeat", data: {} }));
     };
@@ -54,6 +54,7 @@ const useWebsocket = (
     return () => {
       ws.close();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, token]);
 
   useEffect(() => {
