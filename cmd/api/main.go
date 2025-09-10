@@ -13,6 +13,7 @@ import (
 	"github.com/cauldnclark/todo-go/internal/config"
 	"github.com/cauldnclark/todo-go/internal/handlers"
 	"github.com/cauldnclark/todo-go/internal/middleware"
+	"github.com/cauldnclark/todo-go/internal/ratelimit"
 	"github.com/cauldnclark/todo-go/internal/redis"
 	"github.com/cauldnclark/todo-go/internal/repository"
 	"github.com/cauldnclark/todo-go/internal/service"
@@ -100,8 +101,11 @@ func main() {
 		r.Post("/google", authHandler.GoogleSignIn)
 	})
 
+	rateLimiter := ratelimit.NewRateLimiter(redisClient, "sliding")
+
 	r.Route("/api", func(r chi.Router) {
 		r.Use(authMiddleware.Authenticate)
+		r.Use(middleware.RateLimitMiddleware(rateLimiter, 100, time.Minute))
 
 		r.Route("/todos", func(r chi.Router) {
 			r.Get("/", todoHandler.GetTodos)
