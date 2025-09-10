@@ -26,6 +26,15 @@ func (r *RedisCache) Set(ctx context.Context, key string, value interface{}, exp
 	return r.client.GetClient().Set(ctx, key, data, expiration).Err()
 }
 
+func (r *RedisCache) Get(ctx context.Context, key string, value any) error {
+	data, err := r.client.GetClient().Get(ctx, key).Bytes()
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(data, value)
+}
+
 func (r *RedisCache) Delete(ctx context.Context, key string) error {
 	return r.client.GetClient().Del(ctx, key).Err()
 }

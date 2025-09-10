@@ -153,3 +153,33 @@ func (h *TodoHandler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *TodoHandler) GetTodoByID(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "User ID not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	todoIDStr := chi.URLParam(r, "id")
+	todoID, err := strconv.Atoi(todoIDStr)
+	if err != nil {
+		http.Error(w, "Invalid todo ID", http.StatusBadRequest)
+		return
+	}
+
+	todo, err := h.todoService.GetTodoByID(r.Context(), todoID, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "Todo not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Failed to get todo", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(todo); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
+}

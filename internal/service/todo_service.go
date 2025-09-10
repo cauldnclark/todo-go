@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"log"
+	"strconv"
+	"time"
 
 	"github.com/cauldnclark/todo-go/internal/cache"
 	"github.com/cauldnclark/todo-go/internal/models"
@@ -36,7 +39,7 @@ func (s *TodoService) CreateTodo(ctx context.Context, userID int, req *models.Cr
 		return err
 	}
 
-	cacheKey := "todos_user_" + string(rune(todo.UserID))
+	cacheKey := "todos_user_" + strconv.Itoa(todo.UserID)
 	s.cache.Delete(ctx, cacheKey)
 
 	s.hub.Broadcast <- websocket.Message{
@@ -77,6 +80,31 @@ func (s *TodoService) GetTodos(ctx context.Context, userID int, completed *bool,
 		return nil, err
 	}
 	return todosPage, nil
+}
+
+func (s *TodoService) GetTodoByID(ctx context.Context, todoID, userID int) (*models.Todo, error) {
+	cacheKey := "todos_user_" + strconv.Itoa(todoID)
+
+	var todo *models.Todo
+
+	// try cache first
+	err := s.cache.Get(ctx, cacheKey, &todo)
+	if err == nil {
+		log.Printf("cache hit for key: %s", cacheKey)
+		return todo, nil
+	}
+
+	// if not in cache, get from db
+	todo, err = s.todoRepo.GetTodoByID(ctx, todoID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// cache the todo
+	s.cache.Set(ctx, cacheKey, todo, time.Hour)
+	log.Printf("cache set for key: %s", cacheKey)
+
+	return todo, nil
 }
 
 func (s *TodoService) DeleteTodo(ctx context.Context, todoID, userID int) error {

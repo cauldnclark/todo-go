@@ -105,6 +105,7 @@ func main() {
 
 		r.Route("/todos", func(r chi.Router) {
 			r.Get("/", todoHandler.GetTodos)
+			r.Get("/{id}", todoHandler.GetTodoByID)
 			r.Post("/", todoHandler.CreateTodo)
 			r.Put("/{id}", todoHandler.UpdateTodo)
 			r.Delete("/{id}", todoHandler.DeleteTodo)
