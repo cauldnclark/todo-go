@@ -57,6 +57,7 @@ func main() {
 	log.Println("Redis cache initialized")
 
 	hub := websocket.NewHub(redisClient)
+	go hub.Run() // Start the hub to handle WebSocket connections
 	wsHandler := websocket.NewHandler(hub)
 	defer dbpool.Close()
 

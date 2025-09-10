@@ -11,8 +11,10 @@ import {
   Search,
   Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { todoApi } from "@/services/todoApi";
 import type { Todo, ApiError } from "@/types/api";
+import useWebsocket from "@/hooks/useWebsocket";
 
 export default function TodoListPage() {
   const todoAuthToken = localStorage.getItem("todo-auth-token");
@@ -103,6 +105,34 @@ export default function TodoListPage() {
       setError(apiError.message || "Failed to delete todo");
     }
   };
+
+  const onNewWsMessage = (event: MessageEvent<string>) => {
+    try {
+      const data = JSON.parse(event.data);
+      console.log("WebSocket message received:", data);
+      toast.success("New todo created");
+      // Refresh todos when we receive updates
+      fetchTodos();
+    } catch (error) {
+      console.error("Failed to parse WebSocket message:", error);
+    }
+  };
+
+  const handleWebSocketOpen = () => {
+    console.log("WebSocket connection opened");
+  };
+
+  const handleWebSocketClose = (event: CloseEvent) => {
+    console.log("WebSocket connection closed:", event.code, event.reason);
+  };
+
+  useWebsocket(
+    "ws://localhost:8085/ws",
+    todoAuthToken as string,
+    onNewWsMessage,
+    handleWebSocketOpen,
+    handleWebSocketClose
+  );
 
   // Load todos on component mount and when filter changes
   useEffect(() => {

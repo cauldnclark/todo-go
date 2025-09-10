@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"log"
 	"net/http"
 	"os"
 
@@ -67,8 +68,21 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return []byte(jwtKey), nil
 	})
 
+	if err != nil {
+		log.Printf("JWT parse error: %v", err)
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	if !token.Valid {
+		log.Printf("Invalid JWT token")
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
+		log.Printf("Invalid token claims")
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
 	}

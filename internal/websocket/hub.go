@@ -43,11 +43,11 @@ func NewHub(redisClient *redis.Client) *Hub {
 		go hub.redisSubscribe()
 	}
 
-	go hub.run()
+	go hub.Run()
 	return hub
 }
 
-func (h *Hub) run() {
+func (h *Hub) Run() {
 	defer h.wg.Done()
 
 	for {
