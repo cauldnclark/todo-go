@@ -3,21 +3,27 @@ package service
 import (
 	"context"
 
+	"github.com/cauldnclark/todo-go/internal/cache"
 	"github.com/cauldnclark/todo-go/internal/models"
 	"github.com/cauldnclark/todo-go/internal/repository"
+	"github.com/cauldnclark/todo-go/internal/websocket"
 )
 
 type TodoService struct {
 	todoRepo *repository.TodoRepository
+	cache    *cache.RedisCache
+	hub      *websocket.Hub
 }
 
-func NewTodoService(todoRepo *repository.TodoRepository) *TodoService {
+func NewTodoService(todoRepo *repository.TodoRepository, cache *cache.RedisCache, hub *websocket.Hub) *TodoService {
 	return &TodoService{
 		todoRepo: todoRepo,
+		cache:    cache,
+		hub:      hub,
 	}
 }
 
-func (s *TodoService) CreateTodo(ctx context.Context, userID int, req *models.CreateTodoRequest) (*models.Todo, error) {
+func (s *TodoService) CreateTodo(ctx context.Context, userID int, req *models.CreateTodoRequest) error {
 	todo := &models.Todo{
 		UserID:      userID,
 		Title:       req.Title,
@@ -27,10 +33,18 @@ func (s *TodoService) CreateTodo(ctx context.Context, userID int, req *models.Cr
 
 	err := s.todoRepo.CreateTodo(ctx, todo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return todo, nil
+	cacheKey := "todos_user_" + string(rune(todo.UserID))
+	s.cache.Delete(ctx, cacheKey)
+
+	s.hub.Broadcast <- websocket.Message{
+		Event: "todo.created",
+		Data:  *todo,
+	}
+
+	return nil
 }
 
 func (s *TodoService) UpdateTodo(ctx context.Context, todoID, userID int, req *models.UpdateTodoRequest) (*models.Todo, error) {

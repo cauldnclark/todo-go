@@ -9,11 +9,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cauldnclark/todo-go/internal/cache"
 	"github.com/cauldnclark/todo-go/internal/config"
 	"github.com/cauldnclark/todo-go/internal/handlers"
 	"github.com/cauldnclark/todo-go/internal/middleware"
+	"github.com/cauldnclark/todo-go/internal/redis"
 	"github.com/cauldnclark/todo-go/internal/repository"
 	"github.com/cauldnclark/todo-go/internal/service"
+	"github.com/cauldnclark/todo-go/internal/websocket"
 	"github.com/go-chi/chi/v5"
 	chimiddle "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -30,13 +33,38 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
+
+	redisHost := cfg.Redis.Host
+	redisPort := cfg.Redis.Port
+	isProd := cfg.Server.IsProd
+	var redisPassword string
+	if isProd {
+		redisPassword = cfg.Redis.Password
+	} else {
+		redisPassword = ""
+	}
+
+	redisAddr := redisHost + ":" + redisPort
+	redisClient, err := redis.NewClient(redisAddr, &redisPassword, 0)
+
+	if err != nil {
+		log.Fatalf("Error connecting to redis: %v", err)
+	}
+
+	log.Println("Redis client initialized")
+
+	redisCache := cache.NewRedisCache(redisClient)
+	log.Println("Redis cache initialized")
+
+	hub := websocket.NewHub(redisClient)
+	wsHandler := websocket.NewHandler(hub)
 	defer dbpool.Close()
 
 	userRepo := repository.NewUserRepository(dbpool)
 	todoRepo := repository.NewTodoRepository(dbpool)
 
 	userService := service.NewUserService(userRepo, cfg.Server.JWTSecret, cfg.Google.ClientID, cfg.Google.ClientSecret, cfg.Google.RedirectURL)
-	todoService := service.NewTodoService(todoRepo)
+	todoService := service.NewTodoService(todoRepo, redisCache, hub)
 
 	authHandler := handlers.NewAuthHandler(userService)
 	todoHandler := handlers.NewTodoHandler(todoService, userService)
@@ -59,6 +87,8 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
+
+	r.Get("/ws", wsHandler.ServeHTTP)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

@@ -79,7 +79,7 @@ func (h *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	todo, err := h.todoService.CreateTodo(r.Context(), userID, &req)
+	err := h.todoService.CreateTodo(r.Context(), userID, &req)
 	if err != nil {
 		http.Error(w, "Failed to create todo "+err.Error(), http.StatusInternalServerError)
 		return
@@ -87,7 +87,7 @@ func (h *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(todo); err != nil {
+	if err := json.NewEncoder(w).Encode(map[string]string{"message": "Todo created successfully"}); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
 }
