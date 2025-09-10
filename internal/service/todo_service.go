@@ -39,9 +39,6 @@ func (s *TodoService) CreateTodo(ctx context.Context, userID int, req *models.Cr
 		return err
 	}
 
-	cacheKey := "todos_user_" + strconv.Itoa(todo.UserID)
-	s.cache.Delete(ctx, cacheKey)
-
 	s.hub.Broadcast <- websocket.Message{
 		Event: "todo.created",
 		Data:  *todo,
@@ -109,4 +106,25 @@ func (s *TodoService) GetTodoByID(ctx context.Context, todoID, userID int) (*mod
 
 func (s *TodoService) DeleteTodo(ctx context.Context, todoID, userID int) error {
 	return s.todoRepo.DeleteTodo(ctx, todoID, userID)
+}
+
+func (s *TodoService) ClearTodoCache(ctx context.Context, todoID int) error {
+	// You can use Redis SCAN + DEL, or maintain a set of keys per user
+	// For simplicity, we'll delete known key patterns
+
+	keys := []string{
+		"todos_user_" + strconv.Itoa(todoID),
+	}
+
+	for _, key := range keys {
+		if err := s.cache.Delete(ctx, key); err != nil {
+			return err
+		}
+	}
+
+	// Optional: Also clear individual todo caches
+	// You'd need to track them or use Redis KEYS (not recommended in prod)
+
+	log.Printf("🧹 Cleared cache for user %d", todoID)
+	return nil
 }

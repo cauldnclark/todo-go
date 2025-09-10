@@ -113,6 +113,7 @@ func main() {
 			r.Post("/", todoHandler.CreateTodo)
 			r.Put("/{id}", todoHandler.UpdateTodo)
 			r.Delete("/{id}", todoHandler.DeleteTodo)
+			r.Delete("/{id}/cache", todoHandler.ClearTodoCache)
 		})
 
 		r.Get("/me", authHandler.GetCurrentUser)

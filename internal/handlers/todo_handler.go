@@ -183,3 +183,19 @@ func (h *TodoHandler) GetTodoByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
 }
+
+func (h *TodoHandler) ClearTodoCache(w http.ResponseWriter, r *http.Request) {
+	todoIDStr := chi.URLParam(r, "id")
+	todoID, err := strconv.Atoi(todoIDStr)
+	if err != nil {
+		http.Error(w, "Invalid todo ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.todoService.ClearTodoCache(r.Context(), todoID); err != nil {
+		http.Error(w, "Failed to clear todo cache", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
