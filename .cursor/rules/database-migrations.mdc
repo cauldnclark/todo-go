@@ -1,0 +1,43 @@
+---
+globs: *.sql
+---
+
+# Database Migration Guidelines
+
+## Migration Management
+- Use Goose for database migrations
+- Store migrations in [migrations/](mdc:migrations/) directory
+- Follow naming convention: YYYYMMDDHHMMSS_description.sql
+- Always test migrations on development database first
+
+## Migration Best Practices
+- Make migrations reversible when possible
+- Use transactions for complex migrations
+- Add indexes for performance optimization
+- Consider data migration for schema changes
+- Test rollback scenarios
+
+## Schema Design
+- Use proper foreign key constraints
+- Add appropriate indexes for query performance
+- Use timestamps for created_at and updated_at
+- Follow consistent naming conventions
+- Consider data types for optimal storage
+
+## Current Schema
+- Users table: stores Google OAuth user data
+- Todos table: stores todo items with user relationships
+- Use proper data types and constraints
+- Implement soft deletes if needed
+
+## Migration Commands
+```bash
+# Create new migration
+goose create migration_name sql -dir migrations
+
+# Run migrations
+goose -dir migrations postgres "connection_string" up
+
+# Rollback migration
+goose -dir migrations postgres "connection_string" down
+```

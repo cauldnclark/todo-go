@@ -1,0 +1,52 @@
+---
+globs: *.tsx,*.ts
+---
+
+# React Frontend Development Guidelines
+
+## Component Structure
+- Use functional components with hooks
+- Follow the component composition pattern
+- Keep components focused and reusable
+- Use TypeScript for type safety
+
+## UI Components
+- Use Radix UI primitives from [components/ui/](mdc:frontend/src/components/ui/)
+- Style with Tailwind CSS classes
+- Follow the design system established in components
+- Use `cn()` utility for conditional classes
+
+## State Management
+- Use React hooks for local state
+- Custom hooks for complex logic (see [useWebsocket.ts](mdc:frontend/src/hooks/useWebsocket.ts))
+- API calls through service layer ([todoApi.ts](mdc:frontend/src/services/todoApi.ts))
+
+## Type Safety
+- Define types in [types/api.ts](mdc:frontend/src/types/api.ts)
+- Keep frontend types in sync with backend models
+- Use proper TypeScript interfaces for API responses
+- Handle error states with proper typing
+
+## Routing
+- Use React Router for navigation
+- Define routes in [routes.tsx](mdc:frontend/src/routes.tsx)
+- Implement protected routes for authenticated users
+- Handle OAuth callbacks properly
+
+## API Integration
+- Use the TodoApiService class for all API calls
+- Handle authentication tokens in localStorage
+- Implement proper error handling and user feedback
+- Use WebSocket for real-time updates
+
+## Styling
+- Use Tailwind CSS for styling
+- Follow mobile-first responsive design
+- Use CSS variables for theming
+- Keep styles consistent with the design system
+
+## Performance
+- Use React.memo for expensive components
+- Implement proper loading states
+- Optimize re-renders with useCallback/useMemo
+- Lazy load routes when appropriate

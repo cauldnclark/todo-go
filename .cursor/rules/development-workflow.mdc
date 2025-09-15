@@ -1,0 +1,59 @@
+---
+description: Development workflow and best practices
+---
+
+# Development Workflow and Best Practices
+
+## Environment Setup
+- Use environment variables for configuration
+- Create `.env` file for local development
+- Use different configs for dev/staging/production
+- Document required environment variables
+
+## Development Commands
+```bash
+# Backend
+go run cmd/api/main.go
+
+# Frontend
+cd frontend && npm run dev
+
+# Database migrations
+goose -dir migrations postgres "connection_string" up
+```
+
+## Code Quality
+- Use `go fmt` for Go code formatting
+- Run `go vet` for static analysis
+- Use ESLint for TypeScript/React code
+- Follow consistent naming conventions
+- Write meaningful commit messages
+
+## Testing Strategy
+- Unit tests for business logic (services)
+- Integration tests for API endpoints
+- Frontend component testing
+- End-to-end testing for critical flows
+- Test database interactions
+
+## Debugging
+- Use structured logging with logrus
+- Add debug logs for complex operations
+- Use browser dev tools for frontend debugging
+- Monitor Redis and database connections
+- Check WebSocket connection status
+
+## Performance Considerations
+- Monitor database query performance
+- Use Redis caching effectively
+- Optimize frontend bundle size
+- Implement proper error boundaries
+- Use connection pooling for database
+
+## Security Best Practices
+- Validate all user input
+- Use prepared statements for database queries
+- Implement proper CORS configuration
+- Secure JWT token handling
+- Rate limit API endpoints
+- Sanitize user-generated content

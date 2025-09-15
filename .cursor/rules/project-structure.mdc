@@ -1,0 +1,46 @@
+---
+alwaysApply: true
+---
+
+# Todo-Go Project Structure Guide
+
+This is a full-stack todo application with Go backend and React frontend.
+
+## Architecture Overview
+- **Backend**: Go with Chi router, PostgreSQL, Redis, WebSocket support
+- **Frontend**: React + TypeScript with Vite, Tailwind CSS, Radix UI
+- **Authentication**: Google OAuth2 with JWT tokens
+- **Database**: PostgreSQL with Goose migrations
+- **Cache**: Redis for caching and rate limiting
+- **Real-time**: WebSocket for live updates
+
+## Key Entry Points
+- Backend: [cmd/api/main.go](mdc:cmd/api/main.go) - Main server entry point
+- Frontend: [frontend/src/main.tsx](mdc:frontend/src/main.tsx) - React app entry point
+- Routes: [frontend/src/routes.tsx](mdc:frontend/src/routes.tsx) - Frontend routing
+
+## Directory Structure
+- `cmd/api/` - Application entry points
+- `internal/` - Private Go application code
+  - `config/` - Configuration management ([config.go](mdc:internal/config/config.go))
+  - `handlers/` - HTTP request handlers
+  - `middleware/` - HTTP middleware (auth, rate limiting)
+  - `models/` - Data models and API types ([api.go](mdc:internal/models/api.go))
+  - `repository/` - Data access layer
+  - `service/` - Business logic layer
+  - `websocket/` - WebSocket connection management
+- `frontend/` - React TypeScript application
+  - `src/components/ui/` - Reusable UI components (Radix UI based)
+  - `src/routes/` - Page components
+  - `src/services/` - API service layer ([todoApi.ts](mdc:frontend/src/services/todoApi.ts))
+  - `src/types/` - TypeScript type definitions ([api.ts](mdc:frontend/src/types/api.ts))
+- `migrations/` - Database schema migrations
+
+## Data Flow
+1. Frontend makes API calls through [todoApi.ts](mdc:frontend/src/services/todoApi.ts)
+2. Requests hit handlers in `internal/handlers/`
+3. Handlers call services in `internal/service/`
+4. Services interact with repositories in `internal/repository/`
+5. Repositories query PostgreSQL database
+6. Redis used for caching and rate limiting
+7. WebSocket hub broadcasts real-time updates

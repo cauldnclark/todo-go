@@ -1,0 +1,44 @@
+---
+globs: *.go
+---
+
+# Go Backend Development Guidelines
+
+## Code Organization
+- Follow clean architecture: handlers → services → repositories
+- Use dependency injection pattern (see [main.go](mdc:cmd/api/main.go) for examples)
+- Keep business logic in services, data access in repositories
+- HTTP handlers should be thin and delegate to services
+
+## Error Handling
+- Use proper HTTP status codes
+- Return structured error responses
+- Log errors with context using logrus
+- Handle database errors gracefully (check for sql.ErrNoRows)
+
+## Database Patterns
+- Use prepared statements for queries
+- Implement proper connection pooling
+- Use transactions for multi-step operations
+- Follow the repository pattern for data access
+
+## Configuration
+- Load configuration from environment variables via [config.go](mdc:internal/config/config.go)
+- Use struct tags for validation
+- Support both development and production environments
+
+## Middleware
+- Authentication middleware extracts user ID from JWT context
+- Rate limiting uses Redis sliding window
+- CORS configured for frontend integration
+- Request logging and recovery middleware
+
+## WebSocket
+- Hub manages connections and broadcasting
+- Use Redis for scaling WebSocket across instances
+- Handle connection cleanup properly
+
+## Testing
+- Write unit tests for services and repositories
+- Use table-driven tests for handlers
+- Mock external dependencies (Redis, database)

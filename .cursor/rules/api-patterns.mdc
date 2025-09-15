@@ -1,0 +1,50 @@
+---
+description: API design and integration patterns
+---
+
+# API Design and Integration Patterns
+
+## Backend API Design
+- RESTful endpoints following REST conventions
+- Use proper HTTP methods (GET, POST, PUT, DELETE)
+- Implement pagination for list endpoints
+- Use query parameters for filtering and sorting
+- Return consistent JSON response format
+
+## Authentication Flow
+- Google OAuth2 integration for user authentication
+- JWT tokens for API authentication
+- Store tokens securely in localStorage (frontend)
+- Implement token refresh mechanism
+- Protect API routes with authentication middleware
+
+## Error Handling
+- Consistent error response format across all endpoints
+- Use appropriate HTTP status codes
+- Provide meaningful error messages
+- Handle validation errors gracefully
+- Log errors with proper context
+
+## Data Validation
+- Validate input data using struct tags
+- Use go-playground/validator for validation
+- Return validation errors in structured format
+- Sanitize user input before processing
+
+## Caching Strategy
+- Use Redis for caching frequently accessed data
+- Implement cache invalidation on updates
+- Cache user-specific data with proper keys
+- Use sliding window rate limiting
+
+## WebSocket Integration
+- Real-time updates for todo changes
+- Broadcast updates to all connected clients
+- Handle connection lifecycle properly
+- Implement reconnection logic on frontend
+
+## API Documentation
+- Keep API types in sync between frontend and backend
+- Document endpoint parameters and responses
+- Use consistent naming conventions
+- Provide examples for complex endpoints
