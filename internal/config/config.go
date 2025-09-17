@@ -13,6 +13,7 @@ type Config struct {
 	Redis    RedisConfig
 	Google   GoogleConfig
 }
+
 type DatabaseConfig struct {
 	Host        string
 	Port        string
@@ -39,8 +40,29 @@ type GoogleConfig struct {
 }
 
 func Load() (*Config, error) {
-	if err := godotenv.Load(); err != nil {
-		fmt.Println("Error loading .env file")
+	// Load .env if available (non-fatal in production)
+	_ = godotenv.Load()
+
+	// Validate required env vars
+	required := []string{
+		"PORT",
+		"DB_HOST",
+		"DB_PORT",
+		"DB_USER",
+		"DB_PASSWORD",
+		"DB_NAME",
+		"REDIS_HOST",
+		"REDIS_PORT",
+		"JWT_SECRET",
+		"ENV",
+		"GOOGLE_CLIENT_ID",
+		"GOOGLE_CLIENT_SECRET",
+		"GOOGLE_REDIRECT_URL",
+	}
+	for _, v := range required {
+		if os.Getenv(v) == "" {
+			return nil, fmt.Errorf("missing required environment variable: %s", v)
+		}
 	}
 
 	config := &Config{
