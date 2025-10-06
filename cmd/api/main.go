@@ -17,10 +17,12 @@ import (
 	"github.com/cauldnclark/todo-go/internal/redis"
 	"github.com/cauldnclark/todo-go/internal/repository"
 	"github.com/cauldnclark/todo-go/internal/service"
+	"github.com/cauldnclark/todo-go/internal/tasks"
 	"github.com/cauldnclark/todo-go/internal/websocket"
 	"github.com/go-chi/chi/v5"
 	chimiddle "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/hibiken/asynq"
 	"github.com/sirupsen/logrus"
 )
 
@@ -57,6 +59,13 @@ func main() {
 	redisCache := cache.NewRedisCache(redisClient)
 	log.Println("Redis cache initialized")
 
+	taskClient := asynq.NewClient(asynq.RedisClientOpt{
+		Addr:     redisAddr,
+		Password: redisPassword,
+		DB:       0,
+	})
+	defer taskClient.Close()
+
 	hub := websocket.NewHub(redisClient)
 	go hub.Run() // Start the hub to handle WebSocket connections
 	wsHandler := websocket.NewHandler(hub)
@@ -69,7 +78,7 @@ func main() {
 	todoService := service.NewTodoService(todoRepo, redisCache, hub)
 
 	authHandler := handlers.NewAuthHandler(userService)
-	todoHandler := handlers.NewTodoHandler(todoService, userService)
+	todoHandler := handlers.NewTodoHandler(todoService, userService, taskClient)
 
 	authMiddleware := middleware.NewAuthMiddleware(cfg.Server.JWTSecret)
 
@@ -133,6 +142,26 @@ func main() {
 			logrus.Fatalf("Error starting server: %v", err)
 		}
 	}()
+
+	asynqServer := asynq.NewServer(
+		asynq.RedisClientOpt{Addr: redisAddr, Password: redisPassword, DB: 0},
+		asynq.Config{
+			Concurrency: 10,
+			Queues: map[string]int{
+				"critical": 6,
+				"default":  3,
+				"low":      1,
+			},
+		},
+	)
+
+	taskHandler := tasks.NewTaskHandler(todoService)
+	mux := asynq.NewServeMux()
+	mux.HandleFunc(tasks.CreateTodoTask, taskHandler.HandleCreateTodoTask)
+
+	if err := asynqServer.Run(mux); err != nil {
+		log.Fatalf("could not run queue server: %v", err)
+	}
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

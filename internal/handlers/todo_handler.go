@@ -4,24 +4,29 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/cauldnclark/todo-go/internal/middleware"
 	"github.com/cauldnclark/todo-go/internal/models"
 	"github.com/cauldnclark/todo-go/internal/service"
+	"github.com/cauldnclark/todo-go/internal/tasks"
 	"github.com/go-chi/chi/v5"
+	"github.com/hibiken/asynq"
 )
 
 type TodoHandler struct {
 	todoService *service.TodoService
 	userService *service.UserService
+	taskClient  *asynq.Client
 }
 
-func NewTodoHandler(todoService *service.TodoService, userService *service.UserService) *TodoHandler {
+func NewTodoHandler(todoService *service.TodoService, userService *service.UserService, taskClient *asynq.Client) *TodoHandler {
 	return &TodoHandler{
 		todoService: todoService,
 		userService: userService,
+		taskClient:  taskClient,
 	}
 }
 
@@ -79,11 +84,23 @@ func (h *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.todoService.CreateTodo(r.Context(), userID, &req)
+	task, err := tasks.NewCreateTodoTask(tasks.CreateTodoTaskPayload{
+		UserID:      userID,
+		Title:       req.Title,
+		Description: req.Description,
+		Completed:   false,
+	})
+	if err != nil {
+		http.Error(w, "Failed to create todo task "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	info, err := h.taskClient.Enqueue(task)
 	if err != nil {
 		http.Error(w, "Failed to create todo "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("enqueued task: id=%s queue=%s", info.ID, info.Queue)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
